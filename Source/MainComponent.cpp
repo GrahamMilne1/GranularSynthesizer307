@@ -68,6 +68,16 @@ MainComponent::MainComponent()
     { positionRandomnessParam = positionRandomSlider.getValue(); };
     addAndMakeVisible(positionRandomSlider);
 
+    // pitch slider
+    pitchLabel.setText("Grain Pitch", juce::dontSendNotification);
+    addAndMakeVisible(pitchLabel);
+
+    grainPitch.setRange(-4, 4, (1.0f/12.0f));
+    grainPitch.setValue(pitch);
+    grainPitch.onValueChange = [this]
+    { pitch = grainPitch.getValue(); };
+    addAndMakeVisible(grainPitch);
+
     setAudioChannels(0, 2);
 }
 
@@ -89,7 +99,6 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo &buffer
     // clear the buffer
     bufferToFill.clearActiveBufferRegion();
 
-    
     // early return if no file is loaded in buffer
     if (!fileLoaded) {
         return;
@@ -113,29 +122,40 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo &buffer
         {
             if (grains[g].isActive == true) {
 
+                // fractional part of current grain postion
+                float CGPFraction = grains[g].currentBufferPos - (std::floor(grains[g].currentBufferPos));
+
                 // get read position
-                int readPos = grains[g].startPos + grains[g].currentPos;
+                int readPos = std::floor(grains[g].startPos + grains[g].currentBufferPos);
     
-                // if the grain is not active, skip it
-                if (readPos >= fileBuffer.getNumSamples()) {
+                // if read position is outside of buffer, deactivate it
+                if (readPos + 1 >= fileBuffer.getNumSamples() || readPos < 0) {
                     grains[g].isActive = false;
-                    break;
+                    continue;
                 }
     
                 // get phase and evelope
-                float phase = (float)grains[g].currentPos / (float)grains[g].length;
+                float phase = (float)grains[g].currentGrainPos / (float)grains[g].length;
                 float envelope = 0.5f * (1.0f - std::cos(2.0f * juce::MathConstants<float>::pi * phase));
 
-                // if the grain is active, loop over every channel and play grain
+                // if the grain is active, loop over every channel and add current sample
                 for (int channel = 0; channel < channels; channel++) 
                 {
-                    // add grain to buffer 
-                    float sample = fileBuffer.getSample(channel, readPos) * envelope;
+                    // get sample with linear interpolation
+                    float sample = ((fileBuffer.getSample(channel, readPos)) * (1.0f - CGPFraction)) + ((fileBuffer.getSample(channel, readPos + 1)) * CGPFraction);
+
+                    // apply envelope to sample
+                    sample *= envelope;
+
+                    // add sample to buffer
                     bufferToFill.buffer->addSample(channel, i + bufferToFill.startSample, sample);
                 }
+
                 // increase current position and deactivation check
-                grains[g].currentPos++;
-                if (grains[g].currentPos >= grains[g].length) {
+                grains[g].currentGrainPos++;
+                grains[g].currentBufferPos += grains[g].playbackRate;
+
+                if (grains[g].currentGrainPos >= grains[g].length) {
                     grains[g].isActive = false;
                 }
             }
@@ -151,7 +171,8 @@ void MainComponent::spawnGrain() {
 
             // spawn grain if not active
             grains[g].isActive = true;
-            grains[g].currentPos = 0;
+            grains[g].currentBufferPos = 0;
+            grains[g].currentGrainPos = 0;
 
             // calculate base position and random offset
             int basePosition = positionNorm * fileBuffer.getNumSamples();
@@ -166,6 +187,10 @@ void MainComponent::spawnGrain() {
                 (1 + lengthRandomnessParam * (
                     juce::Random::getSystemRandom().nextFloat() * 2 - 1))
             );
+
+            // get playback rate
+            grains[g].playbackRate = pitch;
+
             return;
         }
     }
@@ -183,8 +208,8 @@ void MainComponent::paint (juce::Graphics &g)
 
     // waveform area
     g.setColour(juce::Colours::darkgrey);
-    g.drawRect(10, 260, 380, 160);
-    g.fillRect(10, 260, 380, 160);
+    g.drawRect(10, 300, 380, 160);
+    g.fillRect(10, 300, 380, 160);
 
     if (fileLoaded) {
 
@@ -208,8 +233,8 @@ void MainComponent::paint (juce::Graphics &g)
                 }
             }
             //normalize min and max
-            int lineMax = 340 - (chunkMax * 80);
-            int lineMin = 340 - (chunkMin * 80);
+            int lineMax = 390 - (chunkMax * 80);
+            int lineMin = 390 - (chunkMin * 80);
             // draw waveform lines
             g.drawVerticalLine(10 + i, lineMax, lineMin);
         }
@@ -217,13 +242,13 @@ void MainComponent::paint (juce::Graphics &g)
         // normalize grain position and draw line
         int linePos = 10 + positionNorm * 380;
         g.setColour(juce::Colours::cyan);
-        g.fillRect(linePos, 260, 2, 160);
+        g.fillRect(linePos, 300, 2, 160);
 
         // normalize grain length and draw highlighted area
 
         int GLAreaWidth = ((grainLength * 0.001 * fileSampleRate) / (fileBuffer.getNumSamples())) * 380;
         g.setColour(juce::Colours::cyan.withAlpha(0.5f));
-        g.fillRect(linePos, 260, GLAreaWidth, 160);
+        g.fillRect(linePos, 300, GLAreaWidth, 160);
     }
 }
 
@@ -252,6 +277,10 @@ void MainComponent::resized()
     // position random slider
     positionRandomLabel.setBounds(10, 210, 190, 30);
     positionRandomSlider.setBounds(200, 210, 580, 30);
+
+    // pitch slider
+    pitchLabel.setBounds(10, 250, 190, 30);
+    grainPitch.setBounds(200, 250, 580, 30);
 }
 
 void MainComponent::loadFile() 

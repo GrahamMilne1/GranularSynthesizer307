@@ -33,6 +33,8 @@ class MainComponent : public juce::AudioAppComponent
         juce::Slider lengthRandomSlider;
         juce::Slider positionSlider;
         juce::Slider positionRandomSlider;
+        juce::Slider grainPitch;
+
         std::atomic<bool> fileLoaded{false};
 
         // Slider labels
@@ -41,7 +43,7 @@ class MainComponent : public juce::AudioAppComponent
         juce::Label lengthRandomLabel;
         juce::Label positionLabel;
         juce::Label positionRandomLabel;
-
+        juce::Label pitchLabel;
 
         // grain parameters
         double density = 10.0;
@@ -49,6 +51,7 @@ class MainComponent : public juce::AudioAppComponent
         int grainLength = 100;
         double currSampleRate = 44100.0;
         int countDownUntilNextGrain = 0;
+        float pitch = 1.0f;
 
         // randomness parameters
         float lengthRandomnessParam = 0.2f;
@@ -58,8 +61,10 @@ class MainComponent : public juce::AudioAppComponent
         {
             bool isActive = false;
             int startPos = 0;
-            int currentPos = 0;
+            int currentGrainPos = 0;
             int length = 0;
+            float currentBufferPos = 0.0f;
+            float playbackRate = 0.0f;
         };
         static constexpr int maxGrains = 16;
         Grain grains[maxGrains];
