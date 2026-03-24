@@ -87,10 +87,26 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo &buffer
 void MainComponent::spawnGrain() {
     for (int g = 0; g < maxGrains; g++) {
         if (grains[g].isActive == false) {
+    
+            // this section is kind of a mess
+
+            // spawn grain if not active
             grains[g].isActive = true;
             grains[g].currentPos = 0;
-            grains[g].startPos = (int)(positionNorm * fileBuffer.getNumSamples());
-            grains[g].length = (int)(currSampleRate * grainLength * 0.001);
+
+            // calculate base position and random offset
+            int basePosition = positionNorm * fileBuffer.getNumSamples();
+            int randomOffset = positionRandomnessParam * (juce::Random::getSystemRandom().nextFloat() * 2 - 1) * fileBuffer.getNumSamples();
+
+            // get start position with randomness applied
+            grains[g].startPos = juce::jlimit(0, fileBuffer.getNumSamples(),(int)(basePosition + randomOffset));
+
+            // get length with randomness applied
+            grains[g].length =  
+               (int)((currSampleRate * grainLength * 0.001) * 
+                (1 + lengthRandomnessParam * (
+                    juce::Random::getSystemRandom().nextFloat() * 2 - 1))
+            );
             return;
         }
     }

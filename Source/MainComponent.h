@@ -33,6 +33,10 @@ class MainComponent : public juce::AudioAppComponent
         double currSampleRate = 44100.0;
         int countDownUntilNextGrain = 0;
 
+        // randomness parameters
+        float positionRandomnessParam = 0.05f;
+        float lengthRandomnessParam = 0.2f;
+
         struct Grain 
         {
             bool isActive = false;
