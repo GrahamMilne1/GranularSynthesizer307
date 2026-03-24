@@ -23,8 +23,25 @@ class MainComponent : public juce::AudioAppComponent
         juce::AudioFormatManager formatManager;
         juce::AudioBuffer<float> fileBuffer;
         int fileSampleRate = 0;
+
+        // load button
         juce::TextButton loadButton;
+
+        // Sliders
+        juce::Slider densitySlider;
+        juce::Slider lengthSlider;
+        juce::Slider lengthRandomSlider;
+        juce::Slider positionSlider;
+        juce::Slider positionRandomSlider;
         std::atomic<bool> fileLoaded{false};
+
+        // Slider labels
+        juce::Label densityLabel;
+        juce::Label lengthLabel;
+        juce::Label lengthRandomLabel;
+        juce::Label positionLabel;
+        juce::Label positionRandomLabel;
+
 
         // grain parameters
         double density = 10.0;
@@ -34,8 +51,8 @@ class MainComponent : public juce::AudioAppComponent
         int countDownUntilNextGrain = 0;
 
         // randomness parameters
-        float positionRandomnessParam = 0.05f;
         float lengthRandomnessParam = 0.2f;
+        float positionRandomnessParam = 0.05f;
 
         struct Grain 
         {
