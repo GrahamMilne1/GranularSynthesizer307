@@ -2,6 +2,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <atomic>
+#include "grainEngine/GrainEngine.h"
 
 class MainComponent : public juce::AudioAppComponent
 {
@@ -15,14 +16,11 @@ class MainComponent : public juce::AudioAppComponent
         void resized() override;
         void loadFile();
 
-        void spawnGrain();
-
         ~MainComponent() override;
 
     private:
-        juce::AudioFormatManager formatManager;
-        juce::AudioBuffer<float> fileBuffer;
-        int fileSampleRate = 0;
+
+        GrainEngine grainEngine;
 
         // load button
         juce::TextButton loadButton;
@@ -35,8 +33,6 @@ class MainComponent : public juce::AudioAppComponent
         juce::Slider positionRandomSlider;
         juce::Slider grainPitch;
 
-        std::atomic<bool> fileLoaded{false};
-
         // Slider labels
         juce::Label densityLabel;
         juce::Label lengthLabel;
@@ -44,28 +40,4 @@ class MainComponent : public juce::AudioAppComponent
         juce::Label positionLabel;
         juce::Label positionRandomLabel;
         juce::Label pitchLabel;
-
-        // grain parameters
-        double density = 10.0;
-        float positionNorm = 0.0f;
-        int grainLength = 100;
-        double currSampleRate = 44100.0;
-        int countDownUntilNextGrain = 0;
-        float pitch = 1.0f;
-
-        // randomness parameters
-        float lengthRandomnessParam = 0.2f;
-        float positionRandomnessParam = 0.05f;
-
-        struct Grain 
-        {
-            bool isActive = false;
-            int startPos = 0;
-            int currentGrainPos = 0;
-            int length = 0;
-            float currentBufferPos = 0.0f;
-            float playbackRate = 0.0f;
-        };
-        static constexpr int maxGrains = 16;
-        Grain grains[maxGrains];
 };

@@ -11,6 +11,10 @@ juce_add_gui_app(GranularSynth
 target_sources(GranularSynth PRIVATE
     Source/Main.cpp
     Source/MainComponent.cpp
+    Source/grainEngine/grainEngine.cpp
+    Source/grainEngine/grainEngine.h
+
+
 )
 
 target_link_libraries(GranularSynth PRIVATE
