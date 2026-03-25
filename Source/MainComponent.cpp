@@ -30,7 +30,7 @@ MainComponent::MainComponent()
     lengthSlider.onValueChange = [this]
     { 
         grainEngine.setLength(lengthSlider.getValue());
-        repaint(10, 260, 380, 160);
+        repaint(10, 300, 380, 160);
     };
     addAndMakeVisible(lengthSlider);
 
@@ -53,7 +53,7 @@ MainComponent::MainComponent()
     positionSlider.onValueChange = [this]
     { 
         grainEngine.setPosition(positionSlider.getValue());
-        repaint(10, 260, 380, 160);
+        repaint(10, 300, 380, 160);
     };
     addAndMakeVisible(positionSlider);
 
@@ -77,6 +77,9 @@ MainComponent::MainComponent()
     { grainEngine.setPitch(grainPitch.getValue()); };
     addAndMakeVisible(grainPitch);
 
+    // start painting for grain visualizations
+    startTimerHz(60);
+
     setAudioChannels(0, 2);
 }
 
@@ -84,6 +87,11 @@ MainComponent::~MainComponent()
 {
     //Destructor
     shutdownAudio();
+}
+
+void MainComponent::timerCallback() {
+    repaint();
+    // std::cout << "timer tick" << std::endl;
 }
 
 void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate) 
@@ -111,6 +119,7 @@ void MainComponent::releaseResources()
 
 void MainComponent::paint (juce::Graphics &g) 
 {
+
     // Fills the BG colour
     g.fillAll(juce::Colours::grey);
 
@@ -120,7 +129,6 @@ void MainComponent::paint (juce::Graphics &g)
     g.fillRect(10, 300, 380, 160);
 
     if (grainEngine.isFileLoaded()) {
-
         // draw the waveform
         const float *samples = grainEngine.getFileBuffer().getReadPointer(0);
         float samplesPerPixel = grainEngine.getFileBuffer().getNumSamples() / 380.0f;
@@ -152,11 +160,20 @@ void MainComponent::paint (juce::Graphics &g)
         g.setColour(juce::Colours::cyan);
         g.fillRect(linePos, 300, 2, 160);
 
-        // normalize grain length and draw highlighted area
+        // get grain snapshot
+        std::array<GrainEngine::Snapshot, GrainEngine::maxGrains> snapshot_local = grainEngine.getSnapshot();
 
-        int GLAreaWidth = ((grainEngine.getGrainLength() * 0.001 * grainEngine.getFileSampleRate()) / (grainEngine.getFileBuffer().getNumSamples())) * 380;
-        g.setColour(juce::Colours::cyan.withAlpha(0.5f));
-        g.fillRect(linePos, 300, GLAreaWidth, 160);
+        // paint individual grain positions
+        for (int i = 0; i < GrainEngine::maxGrains; i++) {
+            if (snapshot_local[i].isActive) {
+                float opacity = 1.0f - ((float)snapshot_local[i].currentGrainPos / (float)snapshot_local[i].length);
+
+                g.setColour(juce::Colours::red.withAlpha(opacity));
+                int localReadPos = (snapshot_local[i].currentBufferPos + snapshot_local[i].startPos);
+                int localLinePos = 10 + ((float)localReadPos / (float)grainEngine.getFileBuffer().getNumSamples()) * 380;
+                g.fillRect(localLinePos, 300, 2, 160);
+            }
+        }
     }
 }
 
@@ -195,5 +212,5 @@ void MainComponent::loadFile()
 {
     grainEngine.loadFile();
 
-    repaint(10, 260, 380, 160);
+    repaint(10, 300, 380, 160);
 }

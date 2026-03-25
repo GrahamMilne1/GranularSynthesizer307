@@ -4,7 +4,7 @@
 #include <atomic>
 #include "grainEngine/GrainEngine.h"
 
-class MainComponent : public juce::AudioAppComponent
+class MainComponent : public juce::AudioAppComponent, public juce::Timer
 {
     public:
         MainComponent();
@@ -15,6 +15,7 @@ class MainComponent : public juce::AudioAppComponent
         void paint(juce::Graphics &g) override;
         void resized() override;
         void loadFile();
+        void timerCallback() override;
 
         ~MainComponent() override;
 

@@ -39,7 +39,7 @@ void GrainEngine::setRandomLength(float rLength)
 
 void GrainEngine::setPitch(float pitch) 
 {
-    pitch = this->pitch;
+    this->pitch = pitch;
 }
 
 void GrainEngine::prepareToPlay(int samplesPerBlockExpected, double sampleRate) 
@@ -105,6 +105,18 @@ void GrainEngine::processGrains(const juce::AudioSourceChannelInfo &bufferToFill
                 }
             }
         }
+    }
+
+    // try to update snapshot 
+    if (mtx.try_lock()) {
+        for (int g = 0; g < maxGrains; g++) {
+            snapshot[g].isActive = grains[g].isActive;
+            snapshot[g].currentGrainPos = grains[g].currentGrainPos;
+            snapshot[g].length = grains[g].length;
+            snapshot[g].currentBufferPos = grains[g].currentBufferPos;
+            snapshot[g].startPos = grains[g].startPos;
+        }
+        mtx.unlock();
     }
 }
 
@@ -193,4 +205,11 @@ const float GrainEngine::getPositionNorm()
 const int GrainEngine::getGrainLength() 
 {
     return grainLength;
+}
+
+const std::array<GrainEngine::Snapshot, 16> GrainEngine::getSnapshot()
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    std::array<Snapshot, 16> temp_snapshot = snapshot;
+    return temp_snapshot;
 }

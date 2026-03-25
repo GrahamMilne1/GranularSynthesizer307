@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <atomic>
+#include <mutex>
 
 class GrainEngine
 {
@@ -10,6 +11,20 @@ class GrainEngine
         void prepareToPlay(int samplesPerBlockExpected, double sampleRate);
         void processGrains(const juce::AudioSourceChannelInfo &bufferToFill);
         void loadFile();
+
+        static constexpr int maxGrains = 16;
+
+        // grain snapshot for waveform rendering
+        struct Snapshot
+        {
+            bool isActive = false;
+            int currentGrainPos = 0;
+            int length = 0;
+            float currentBufferPos = 0.0f;
+            int startPos = 0;
+        };
+        std::mutex mtx;
+        std::array<Snapshot, maxGrains> snapshot;
 
         //setting methods
         void setDensity(double density);
@@ -25,6 +40,7 @@ class GrainEngine
         const int getFileSampleRate();
         const float getPositionNorm();
         const int getGrainLength();
+        const std::array<Snapshot, 16> getSnapshot();
 
         ~GrainEngine();
 
@@ -58,6 +74,5 @@ class GrainEngine
             float currentBufferPos = 0.0f;
             float playbackRate = 0.0f;
         };
-        static constexpr int maxGrains = 16;
         Grain grains[maxGrains];
 };
