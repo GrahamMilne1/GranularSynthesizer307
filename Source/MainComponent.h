@@ -3,6 +3,7 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <atomic>
 #include "grainEngine/GrainEngine.h"
+#include "HandTracking/HandTracking.h"
 
 class MainComponent : public juce::AudioAppComponent, public juce::Timer
 {
@@ -16,6 +17,8 @@ class MainComponent : public juce::AudioAppComponent, public juce::Timer
         void resized() override;
         void loadFile();
         void timerCallback() override;
+
+        HandTracking handTracker;
 
         ~MainComponent() override;
 

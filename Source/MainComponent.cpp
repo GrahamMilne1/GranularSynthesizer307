@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include <iostream>
+#include <opencv2/opencv.hpp>
 
 MainComponent::MainComponent() 
 {
@@ -174,6 +175,23 @@ void MainComponent::paint (juce::Graphics &g)
                 g.fillRect(localLinePos, 300, 2, 160);
             }
         }
+    }
+
+    // render video output
+    cv::Mat image = handTracker.getImage();
+    if (!image.empty()) {
+        // convert to JUCE image
+        cv::cvtColor(image, image, cv::COLOR_BGR2BGRA);
+        juce::Image jImage(juce::Image::PixelFormat::ARGB, image.cols , image.rows, false);
+
+        juce::Image::BitmapData bitmapData(jImage, juce::Image::BitmapData::writeOnly);
+
+        for (int r = 0; r < image.rows; r++) {
+            memcpy(bitmapData.getLinePointer(r), image.ptr(r), image.cols * 4);
+        }
+
+        // render image
+        g.drawImage(jImage, juce::Rectangle<float>(410.0f, 300.0f, 300.0f, 160.0f));
     }
 }
 

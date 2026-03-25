@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(GranularSynth VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/opencv")
+find_package(OpenCV REQUIRED)
 
 add_subdirectory(JUCE)
 
@@ -13,8 +15,8 @@ target_sources(GranularSynth PRIVATE
     Source/MainComponent.cpp
     Source/grainEngine/grainEngine.cpp
     Source/grainEngine/grainEngine.h
-
-
+    Source/HandTracking/HandTracking.cpp
+    Source/HandTracking/HandTracking.h
 )
 
 target_link_libraries(GranularSynth PRIVATE
@@ -22,6 +24,7 @@ target_link_libraries(GranularSynth PRIVATE
     juce::juce_gui_extra
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
+    ${OpenCV_LIBS}
 )
 
 target_compile_definitions(GranularSynth PRIVATE JUCE_MODAL_LOOPS_PERMITTED=1)
