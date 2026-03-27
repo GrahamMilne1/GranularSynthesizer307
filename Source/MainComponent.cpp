@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <algorithm>
 
 MainComponent::MainComponent() 
 {
@@ -78,6 +79,10 @@ MainComponent::MainComponent()
     { grainEngine.setPitch(grainPitch.getValue()); };
     addAndMakeVisible(grainPitch);
 
+    // set gain
+    gain = 1.0;
+    targetGain = 1.0;
+
     // start painting for grain visualizations
     startTimerHz(60);
 
@@ -92,7 +97,37 @@ MainComponent::~MainComponent()
 
 void MainComponent::timerCallback() {
     repaint();
-    // std::cout << "timer tick" << std::endl;
+
+    // get hand tracking positions from handTracker and update values in grain engine
+    if (handTracker.isTracking == true)
+    {
+        if (handTracker.currentGesture == HandTracking::Gesture::PALM) {
+            // set position parameter and slider
+            grainEngine.setPosition(handTracker.handX);
+            positionSlider.setValue(handTracker.handX, juce::dontSendNotification);
+
+            // set length paremeter and slider
+            grainEngine.setLength(handTracker.handY * (1000 - 1) + 1);
+            lengthSlider.setValue(handTracker.handY * (1000 - 1) + 1, juce::dontSendNotification);
+
+        } else if (handTracker.currentGesture == HandTracking::Gesture::POINT) {
+            // set random position parameter and slider
+            grainEngine.setRandomPosition(handTracker.handX);
+            positionRandomSlider.setValue(handTracker.handX, juce::dontSendNotification);
+
+            // set random length parameter and slider
+            grainEngine.setRandomLength(handTracker.handY);
+            lengthRandomSlider.setValue(handTracker.handY, juce::dontSendNotification);
+        } else if (handTracker.currentGesture == HandTracking::Gesture::PINCH) {
+            // set density parameter and slider
+            grainEngine.setDensity(handTracker.handX * (50 - 1) + 1);
+            densitySlider.setValue(handTracker.handX * (50 - 1) + 1, juce::dontSendNotification);
+
+            // set pitch parameter and slider
+            grainEngine.setPitch(handTracker.handY * 8 - 4);   
+            grainPitch.setValue(handTracker.handY * 8 - 4, juce::dontSendNotification);
+        }
+    }
 }
 
 void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate) 
@@ -107,9 +142,32 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo &buffer
     // clear the buffer
     bufferToFill.clearActiveBufferRegion();
 
-    // early return if no file is loaded in buffer
+    // set gain based on if fist is detected
+    if (handTracker.currentGesture == HandTracking::Gesture::FIST) {
+        targetGain = 0.0;
+    } else {
+        targetGain = 1.0;
+    }
+
+    // dont process if no file is loaded in buffer
     if (grainEngine.isFileLoaded()) {
         grainEngine.processGrains(bufferToFill);
+    }
+
+    // fade audio either up or down to match target gain
+    for (int i = 0; i < bufferToFill.numSamples; i++)
+    {
+        if (gain < targetGain) {
+            gain += 0.00002;
+            gain = std::clamp(gain, 0.0f, 1.0f);
+        } else if (gain > targetGain) {
+            gain -= 0.00002;
+            gain = std::clamp(gain, 0.0f, 1.0f);      
+        } 
+        for (int j = 0; j < bufferToFill.buffer->getNumChannels(); j++)
+        {
+            bufferToFill.buffer->getWritePointer(j)[i] *= gain;
+        }
     }
 }
 
@@ -191,6 +249,9 @@ void MainComponent::paint (juce::Graphics &g)
         }
 
         // render image
+
+        // stop camera from flickering, not sure why this happens in the first place
+        g.setOpacity(1.0f);
         g.drawImage(jImage, juce::Rectangle<float>(410.0f, 300.0f, 300.0f, 160.0f));
     }
 }

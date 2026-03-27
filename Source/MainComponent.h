@@ -18,6 +18,9 @@ class MainComponent : public juce::AudioAppComponent, public juce::Timer
         void loadFile();
         void timerCallback() override;
 
+        float gain;
+        float targetGain;
+
         HandTracking handTracker;
 
         ~MainComponent() override;

@@ -2,6 +2,7 @@
 #include <atomic>
 #include <thread>
 #include <opencv2/opencv.hpp>
+#include <cmath>
 
 class HandTracking
 {
@@ -13,9 +14,10 @@ class HandTracking
         enum class Gesture
         {
             NONE,
-            FIST,
+            POINT,
             PALM,
-            PINCH
+            PINCH,
+            FIST
         };
 
         std::atomic<float> handY;
@@ -37,10 +39,23 @@ class HandTracking
 
         cv::VideoCapture cap;
 
+        // gesture tracking candidate and frame count
+        Gesture candidateGesture;
+        int gestureFrameCount;
+
+        // total missed frames before dropping tracking
+        int missedFrames;
+
         // image to be rendered
         cv::Mat latestImage;
         std::mutex mtx;
 
         // methods
         void trackingLoop();
+
+        std::vector<std::pair<float, float>> anchors;
+
+        // hand tracking model loading
+        cv::dnn::Net palmNet;
+        cv::dnn::Net handPoseNet;
 };

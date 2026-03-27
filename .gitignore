@@ -1,0 +1,19 @@
+# Build artifacts
+build/
+
+# Claude Code
+.claude/
+CLAUDE.md
+claude.md
+
+# Research
+research/
+
+# macOS
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+*.xcworkspace
+*.xcuserdata
